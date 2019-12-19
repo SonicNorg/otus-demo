@@ -1,0 +1,83 @@
+buildscript {
+    apply from: 'versions.gradle'
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+}
+
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.3.41'
+    id 'com.github.johnrengelman.shadow' version '5.2.0'
+    id 'org.hidetake.ssh' version '2.10.1'
+}
+
+group 'com.otus'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    compile "org.telegram:telegrambots-abilities:${versions.telegram}"
+
+    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${versions.jackson}"
+    compile "org.apache.logging.log4j:log4j-api:${versions.log4j}"
+    compile "org.apache.logging.log4j:log4j-core:${versions.log4j}"
+    compile "org.apache.logging.log4j:log4j-slf4j-impl:${versions.log4j}"
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+processResources {
+    filter(org.apache.tools.ant.filters.ReplaceTokens, tokens: ["lastName": lastName])
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.otus.demobot.MainKt'
+    }
+}
+
+def fileName
+
+shadowJar {
+    println "${lastName}-${archiveFileName.get()}"
+    archiveFileName = "${lastName}-${archiveFileName.get()}"
+    fileName = archiveFileName
+}
+
+ssh.settings {
+    knownHosts = allowAnyHosts
+}
+
+remotes {
+    webServer {
+        host = 'tg.nepavel.name'
+        user = 'otus'
+        password = 'спросите у меня в слаке'
+    }
+}
+
+task deploy {
+    doLast {
+        ssh.run {
+            session(remotes.webServer) {
+                put from: "${buildDir}/libs/${fileName.get()}", into: "/home/otus/${fileName.get()}"
+                def result = execute "java -jar ${fileName.get()}"
+            }
+        }
+        println result
+    }
+}
+compileKotlin.dependsOn(processResources)
+deploy.dependsOn(shadowJar)
+shadowJar.dependsOn(build)

@@ -1,0 +1,12 @@
+ext {
+    versions = [
+            'exposed'                         : '0.18.1',
+            'telegram'                        : '4.4.0.2',
+            'jackson'                         : '2.10.0',
+            'log4j'                           : '2.11.1',
+
+            'junit'                           : '4.12',
+            'mockito'                         : '2.1.0',
+            'powermock'                       : '2.0.4',
+    ]
+}
